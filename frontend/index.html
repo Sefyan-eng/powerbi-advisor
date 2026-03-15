@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Power BI Model Advisor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --border: #2a2a3a;
+    --accent: #f7c52e;
+    --accent2: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #888899;
+    --fact: #ff6b35;
+    --dim: #4fc3f7;
+    --bridge: #ab47bc;
+    --success: #66bb6a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(247,197,46,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(247,197,46,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo {
+    width: 40px; height: 40px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    font-size: 14px;
+    color: #000;
+  }
+
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+  }
+
+  header span {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* Main layout */
+  main { padding: 48px 0; }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .hero h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(32px, 5vw, 56px);
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+
+  .hero h2 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Upload Zone */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 60px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(247,197,46,0.05) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); }
+  .upload-zone:hover::after, .upload-zone.drag::after { opacity: 1; }
+
+  .upload-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 20px;
+    background: var(--surface2);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+
+  .upload-zone h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .upload-zone p { color: var(--muted); font-size: 14px; }
+
+  .upload-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(247,197,46,0.1);
+    border: 1px solid rgba(247,197,46,0.3);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 16px;
+  }
+
+  /* Btn */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 24px;
+    width: 100%;
+    justify-content: center;
+    letter-spacing: 0.3px;
+  }
+
+  .btn:hover { background: #ffd54f; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(247,197,46,0.25); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Loading */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 60px 0;
+  }
+
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-steps { color: var(--muted); font-size: 14px; }
+  .loading-step { display: none; }
+  .loading-step.active { display: block; color: var(--accent); }
+
+  /* Results */
+  #results { display: none; animation: fadeUp 0.5s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* Model badge */
+  .model-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(247,197,46,0.15), rgba(255,107,53,0.1));
+    border: 1px solid rgba(247,197,46,0.3);
+    border-radius: 12px;
+    padding: 12px 20px;
+    margin-bottom: 32px;
+  }
+
+  .model-badge .type {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--accent);
+  }
+
+  .summary-text {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.7;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+
+  /* Tables grid */
+  .tables-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .table-card:hover { border-color: var(--muted); }
+
+  .table-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .type-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .type-fact { background: rgba(255,107,53,0.15); color: var(--fact); }
+  .type-dimension { background: rgba(79,195,247,0.15); color: var(--dim); }
+  .type-bridge { background: rgba(171,71,188,0.15); color: var(--bridge); }
+
+  .table-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  .table-source {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .cols-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .col-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    color: var(--muted);
+  }
+
+  .pk-tag { border-color: var(--accent); color: var(--accent); }
+
+  /* Relationships */
+  .rel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .rel-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+
+  .rel-table { color: var(--text); font-weight: 500; }
+  .rel-col { color: var(--accent); }
+  .rel-arrow { color: var(--muted); font-size: 16px; }
+  .rel-card { font-size: 10px; color: var(--muted); margin-left: auto; border: 1px solid var(--border); padding: 2px 8px; border-radius: 20px; }
+
+  /* Measures */
+  .measures-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .measure-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .measure-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .measure-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .measure-desc { color: var(--muted); font-size: 12px; }
+
+  .dax-code {
+    padding: 12px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #7ec8e3;
+    background: #0d1117;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* Warnings & Tips */
+  .warn-list, .tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+
+  .warn-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .warn-item .icon { flex-shrink: 0; }
+
+  .tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(102,187,106,0.08);
+    border: 1px solid rgba(102,187,106,0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .reset-btn:hover { border-color: var(--text); color: var(--text); }
+
+  /* Error */
+  .error-box {
+    display: none;
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    color: var(--fact);
+    margin-top: 24px;
+    font-size: 14px;
+  }
+
+  /* Schema section */
+  .schema-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 16px;
+  }
+  .schema-toggle:hover { color: var(--text); border-color: var(--muted); }
+
+  .schema-raw {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: pre;
+    overflow-x: auto;
+    display: none;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <div class="logo">PB</div>
+    <h1>Power BI Model Advisor</h1>
+    <span>Powered by Claude AI</span>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h2>Trouve le <em>modèle de données</em><br/>Power BI idéal</h2>
+      <p>Uploade ton fichier Excel — l'IA analyse la structure et recommande le schéma optimal avec les relations et les mesures DAX.</p>
+    </div>
+
+    <!-- Upload -->
+    <div id="upload-section">
+      <div class="upload-zone" id="dropzone">
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+        <div class="upload-icon">📊</div>
+        <h3>Glisse ton fichier ici</h3>
+        <p>Formats supportés : .xlsx · .xls · .csv</p>
+        <div class="file-chip" id="fileChip" style="display:none">
+          <span>📄</span>
+          <span id="fileName"></span>
+        </div>
+      </div>
+      <button class="btn" id="analyzeBtn" disabled onclick="runAnalysis()">
+        ✨ Analyser le modèle Power BI
+      </button>
+      <div class="error-box" id="errorBox"></div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div class="loading-steps">
+        <div class="loading-step" id="step1">📂 Lecture du fichier Excel...</div>
+        <div class="loading-step" id="step2">🔍 Analyse de la structure...</div>
+        <div class="loading-step" id="step3">🤖 Claude modélise votre schéma...</div>
+        <div class="loading-step" id="step4">✅ Finalisation des recommandations...</div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+      <div class="model-badge">
+        <span>🏗️</span>
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Modèle Recommandé</div>
+          <div class="type" id="modelType">—</div>
+        </div>
+      </div>
+
+      <p class="section-title">Résumé</p>
+      <div class="summary-text" id="summaryText"></div>
+
+      <p class="section-title">Tables du modèle</p>
+      <div class="tables-grid" id="tablesGrid"></div>
+
+      <hr class="divider"/>
+
+      <p class="section-title">Relations</p>
+      <div class="rel-list" id="relList"></div>
+
+      <hr class="divider"/>
+
+      <p class="section-title">Mesures DAX suggérées</p>
+      <div class="measures-list" id="measuresList"></div>
+
+      <hr class="divider"/>
+
+      <p class="section-title">⚠️ Avertissements</p>
+      <div class="warn-list" id="warnList"></div>
+
+      <p class="section-title">💡 Bonnes pratiques</p>
+      <div class="tips-list" id="tipsList"></div>
+
+      <hr class="divider"/>
+
+      <p class="section-title">Schéma brut détecté</p>
+      <button class="schema-toggle" onclick="toggleSchema()">Afficher / Masquer le schéma</button>
+      <pre class="schema-raw" id="schemaRaw"></pre>
+
+      <hr class="divider"/>
+      <button class="reset-btn" onclick="reset()">← Analyser un autre fichier</button>
+    </div>
+  </main>
+</div>
+
+<script>
+const API = window.location.hostname === 'localhost'
+  ? 'http://localhost:8000'
+  : '';  // same origin on Codespaces
+
+let selectedFile = null;
+
+const fileInput = document.getElementById('fileInput');
+const dropzone = document.getElementById('dropzone');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const fileChip = document.getElementById('fileChip');
+const fileName = document.getElementById('fileName');
+const errorBox = document.getElementById('errorBox');
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) selectFile(e.target.files[0]);
+});
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]);
+});
+
+function selectFile(f) {
+  selectedFile = f;
+  fileName.textContent = f.name;
+  fileChip.style.display = 'inline-flex';
+  analyzeBtn.disabled = false;
+  errorBox.style.display = 'none';
+}
+
+async function runAnalysis() {
+  if (!selectedFile) return;
+  
+  document.getElementById('upload-section').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+
+  const steps = ['step1','step2','step3','step4'];
+  let si = 0;
+  document.getElementById(steps[si]).classList.add('active');
+  const stepInterval = setInterval(() => {
+    document.getElementById(steps[si]).classList.remove('active');
+    si = Math.min(si+1, steps.length-1);
+    document.getElementById(steps[si]).classList.add('active');
+  }, 2500);
+
+  try {
+    const form = new FormData();
+    form.append('file', selectedFile);
+    const resp = await fetch(`${API}/analyze`, { method: 'POST', body: form });
+    
+    clearInterval(stepInterval);
+    
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Erreur serveur');
+    }
+    
+    const data = await resp.json();
+    renderResults(data);
+    
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+  } catch(e) {
+    clearInterval(stepInterval);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('upload-section').style.display = 'block';
+    errorBox.style.display = 'block';
+    errorBox.textContent = '❌ ' + e.message;
+  }
+}
+
+function renderResults(d) {
+  document.getElementById('modelType').textContent = d.model_type || '—';
+  document.getElementById('summaryText').textContent = d.summary || '';
+
+  // Tables
+  const tg = document.getElementById('tablesGrid');
+  tg.innerHTML = '';
+  (d.tables || []).forEach(t => {
+    const typeClass = t.type?.toLowerCase() === 'fact' ? 'type-fact' : t.type?.toLowerCase() === 'bridge' ? 'type-bridge' : 'type-dimension';
+    const cols = (t.columns || []).map(c => `<span class="col-tag ${c === t.primary_key ? 'pk-tag' : ''}">${c}${c === t.primary_key ? ' 🔑' : ''}</span>`).join('');
+    tg.innerHTML += `
+      <div class="table-card">
+        <div class="table-header">
+          <span class="type-badge ${typeClass}">${t.type}</span>
+          <span class="table-name">${t.name}</span>
+        </div>
+        <div class="table-source">📄 ${t.source_sheet}</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:10px;line-height:1.5">${t.description || ''}</div>
+        <div class="cols-list">${cols}</div>
+      </div>`;
+  });
+
+  // Relationships
+  const rl = document.getElementById('relList');
+  rl.innerHTML = '';
+  (d.relationships || []).forEach(r => {
+    rl.innerHTML += `
+      <div class="rel-item">
+        <span class="rel-table">${r.from_table}</span>
+        <span class="rel-col">[${r.from_column}]</span>
+        <span class="rel-arrow">→</span>
+        <span class="rel-table">${r.to_table}</span>
+        <span class="rel-col">[${r.to_column}]</span>
+        <span class="rel-card">${r.cardinality} · ${r.cross_filter}</span>
+      </div>`;
+  });
+
+  // Measures
+  const ml = document.getElementById('measuresList');
+  ml.innerHTML = '';
+  (d.measures_suggested || []).forEach(m => {
+    ml.innerHTML += `
+      <div class="measure-card">
+        <div class="measure-header">
+          <span>📐</span>
+          <div>
+            <div class="measure-name">${m.name}</div>
+            <div class="measure-desc">${m.description}</div>
+          </div>
+        </div>
+        <div class="dax-code">${m.dax}</div>
+      </div>`;
+  });
+
+  // Warnings
+  const wl = document.getElementById('warnList');
+  wl.innerHTML = '';
+  (d.warnings || []).forEach(w => {
+    wl.innerHTML += `<div class="warn-item"><span class="icon">⚠️</span>${w}</div>`;
+  });
+
+  // Tips
+  const tl = document.getElementById('tipsList');
+  tl.innerHTML = '';
+  (d.best_practices || []).forEach(b => {
+    tl.innerHTML += `<div class="tip-item"><span class="icon">✅</span>${b}</div>`;
+  });
+
+  // Schema raw
+  document.getElementById('schemaRaw').textContent = JSON.stringify(d.schema, null, 2);
+}
+
+function toggleSchema() {
+  const el = document.getElementById('schemaRaw');
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+function reset() {
+  selectedFile = null;
+  fileInput.value = '';
+  fileChip.style.display = 'none';
+  analyzeBtn.disabled = true;
+  errorBox.style.display = 'none';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('upload-section').style.display = 'block';
+  document.querySelectorAll('.loading-step').forEach(s => s.classList.remove('active'));
+}
+</script>
+</body>
+</html>
