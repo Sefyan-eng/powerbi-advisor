@@ -362,48 +362,39 @@ async def prompt_model(req: PromptRequest):
         results["model_state"] = model_state[:3000]
 
         # 3. Ask Claude to plan operations
-        system_prompt = f"""Tu es un expert Power BI connecté à un modèle sémantique Power BI Desktop via MCP.
+        system_prompt = f"""Tu es un expert Power BI connecté en direct à un modèle sémantique Power BI Desktop via MCP.
 Voici l'état actuel du modèle :
 
 {model_state}
 
-L'utilisateur veut modifier ce modèle. Analyse sa demande et réponds en JSON valide (sans markdown) :
+L'utilisateur veut modifier ce modèle. Analyse sa demande et réponds en JSON valide (sans markdown).
+
+Actions disponibles :
 
 {{
-  "reply": "Explication courte de ce que tu vas faire (en français)",
+  "reply": "Explication courte en français de ce que tu fais",
   "actions": [
-    {{
-      "type": "create_measure",
-      "table": "NomTable",
-      "name": "NomMesure",
-      "expression": "FORMULE DAX",
-      "description": "description"
-    }},
-    {{
-      "type": "create_relationship",
-      "from_table": "T1",
-      "from_column": "col1",
-      "to_table": "T2",
-      "to_column": "col2",
-      "cross_filter": "OneDirection"
-    }},
-    {{
-      "type": "execute_dax",
-      "query": "EVALUATE ..."
-    }},
-    {{
-      "type": "info",
-      "message": "Information ou conseil sans action"
-    }}
+    {{"type": "create_measure", "table": "Table", "name": "Nom", "expression": "DAX", "description": "desc"}},
+    {{"type": "delete_measure", "table": "Table", "name": "NomMesure"}},
+    {{"type": "update_measure", "table": "Table", "name": "NomMesure", "expression": "NEW DAX", "description": "new desc"}},
+    {{"type": "create_relationship", "from_table": "T1", "from_column": "c1", "to_table": "T2", "to_column": "c2", "cross_filter": "OneDirection"}},
+    {{"type": "delete_relationship", "name": "RelationshipName"}},
+    {{"type": "create_table", "name": "NomTable", "dax_expression": "SELECTCOLUMNS(...)"}},
+    {{"type": "delete_table", "name": "NomTable"}},
+    {{"type": "execute_dax", "query": "EVALUATE ..."}},
+    {{"type": "info", "message": "Information ou conseil"}}
   ]
 }}
 
 Règles :
-- Utilise UNIQUEMENT les tables et colonnes qui existent dans le modèle ci-dessus
-- Pour les mesures DAX, utilise la syntaxe correcte
+- Utilise UNIQUEMENT les tables et colonnes qui EXISTENT dans le modèle ci-dessus
+- Pour les mesures DAX, utilise la syntaxe DAX correcte et valide
+- N'invente JAMAIS de colonnes ou tables qui n'existent pas
+- Pour supprimer, utilise delete_measure/delete_table/delete_relationship
+- Pour modifier une mesure existante, utilise update_measure
+- Pour créer une table calculée, utilise create_table avec une expression DAX (SELECTCOLUMNS, DISTINCT, etc.)
 - Si la demande n'est pas claire, retourne un "info" avec une question de clarification
-- Si aucune action n'est nécessaire, retourne actions vide et reply avec l'explication
-- Réponds UNIQUEMENT en JSON valide"""
+- Réponds UNIQUEMENT en JSON valide, pas de markdown"""
 
         messages = []
         for msg in req.conversation:
@@ -444,6 +435,25 @@ Règles :
                         "status": "done",
                     })
 
+                elif action_type == "delete_measure":
+                    await mcp.delete_measure(action["table"], action["name"])
+                    results["actions"].append({
+                        "type": "delete_measure",
+                        "name": action["name"],
+                        "status": "done",
+                    })
+
+                elif action_type == "update_measure":
+                    await mcp.update_measure(
+                        action["table"], action["name"],
+                        action.get("expression"), action.get("description"),
+                    )
+                    results["actions"].append({
+                        "type": "update_measure",
+                        "name": action["name"],
+                        "status": "done",
+                    })
+
                 elif action_type == "create_relationship":
                     await mcp.create_relationship(
                         action["from_table"], action["from_column"],
@@ -453,6 +463,30 @@ Règles :
                     results["actions"].append({
                         "type": "create_relationship",
                         "rel": f"{action['from_table']}[{action['from_column']}] -> {action['to_table']}[{action['to_column']}]",
+                        "status": "done",
+                    })
+
+                elif action_type == "delete_relationship":
+                    await mcp.delete_relationship(action["name"])
+                    results["actions"].append({
+                        "type": "delete_relationship",
+                        "name": action["name"],
+                        "status": "done",
+                    })
+
+                elif action_type == "create_table":
+                    await mcp.create_calculated_table(action["name"], action["dax_expression"])
+                    results["actions"].append({
+                        "type": "create_table",
+                        "name": action["name"],
+                        "status": "done",
+                    })
+
+                elif action_type == "delete_table":
+                    await mcp.delete_table(action["name"])
+                    results["actions"].append({
+                        "type": "delete_table",
+                        "name": action["name"],
                         "status": "done",
                     })
 

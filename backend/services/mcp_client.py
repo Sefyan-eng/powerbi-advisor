@@ -246,6 +246,40 @@ class MCPClient:
             "tableName": table_name,
         })
 
+    async def delete_measure(self, table_name: str, name: str) -> dict:
+        return await self.call_tool("measure_operations", {
+            "operation": "Delete",
+            "measureName": name,
+            "tableName": table_name,
+            "shouldCascadeDelete": True,
+        })
+
+    async def update_measure(self, table_name: str, name: str,
+                              expression: str = None, description: str = None) -> dict:
+        update_def = {"tableName": table_name, "name": name}
+        if expression is not None:
+            update_def["expression"] = expression
+        if description is not None:
+            update_def["description"] = description
+        return await self.call_tool("measure_operations", {
+            "operation": "Update",
+            "updateDefinition": update_def,
+        })
+
+    async def delete_table(self, table_name: str) -> dict:
+        return await self.call_tool("table_operations", {
+            "operation": "Delete",
+            "tableName": table_name,
+            "shouldCascadeDelete": True,
+        })
+
+    async def delete_relationship(self, name: str) -> dict:
+        return await self.call_tool("relationship_operations", {
+            "operation": "Delete",
+            "relationshipName": name,
+            "shouldCascadeDelete": True,
+        })
+
     async def get_model(self) -> dict:
         return await self.call_tool("model_operations", {"operation": "Get"})
 

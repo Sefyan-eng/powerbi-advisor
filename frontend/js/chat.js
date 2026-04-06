@@ -22,9 +22,14 @@ function renderActions(actions) {
     const icon = a.status === 'done' ? '&#10003;' : '&#10007;';
     const color = a.status === 'done' ? 'var(--success)' : 'var(--danger)';
     let label = '';
-    if (a.type === 'create_measure') label = `Measure <strong>${esc(a.name)}</strong> on ${esc(a.table)}`;
-    else if (a.type === 'create_relationship') label = `Relationship ${esc(a.rel || '')}`;
-    else if (a.type === 'execute_dax') label = `DAX Query` + (a.result ? `<br/><code style="font-size:11px;color:var(--text3);white-space:pre-wrap;">${esc(a.result).substring(0,300)}</code>` : '');
+    if (a.type === 'create_measure') label = `<strong>+</strong> Measure <strong>${esc(a.name || '')}</strong> on ${esc(a.table || '')}`;
+    else if (a.type === 'delete_measure') label = `<strong>&minus;</strong> Deleted measure <strong>${esc(a.name || '')}</strong>`;
+    else if (a.type === 'update_measure') label = `<strong>&#8635;</strong> Updated measure <strong>${esc(a.name || '')}</strong>`;
+    else if (a.type === 'create_relationship') label = `<strong>+</strong> Relationship ${esc(a.rel || '')}`;
+    else if (a.type === 'delete_relationship') label = `<strong>&minus;</strong> Deleted relationship <strong>${esc(a.name || '')}</strong>`;
+    else if (a.type === 'create_table') label = `<strong>+</strong> Table <strong>${esc(a.name || '')}</strong>`;
+    else if (a.type === 'delete_table') label = `<strong>&minus;</strong> Deleted table <strong>${esc(a.name || '')}</strong>`;
+    else if (a.type === 'execute_dax') label = `DAX Query` + (a.result ? `<br/><code style="font-size:11px;color:var(--text3);white-space:pre-wrap;">${esc(a.result).substring(0,500)}</code>` : '');
     else if (a.type === 'info') label = esc(a.message || '');
     else label = `${esc(a.type)}: ${a.error ? esc(a.error) : 'done'}`;
 

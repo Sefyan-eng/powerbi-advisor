@@ -25,7 +25,7 @@ async function loadDashboard() {
 
     renderKPIs(data.kpis || []);
     renderCharts(data.charts || []);
-    renderPythonScripts(data.scripts || []);
+    renderPythonScripts(data.python_scripts || data.scripts || []);
     setStatus('Ready');
   } catch (e) {
     const container = document.getElementById('dashboardContent');
@@ -142,7 +142,7 @@ function renderPythonScripts(scripts) {
       </div>
       <div class="script-card-body" id="scriptBody${i}">
         <button class="script-copy-btn" onclick="copyScript(${i})">Copy</button>
-        <pre id="scriptCode${i}">${esc(s.code || s.content || '')}</pre>
+        <pre id="scriptCode${i}">${esc(s.script || s.code || s.content || '')}</pre>
       </div>
     </div>
   `).join('');
