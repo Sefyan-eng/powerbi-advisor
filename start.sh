@@ -1,10 +1,15 @@
 #!/bin/bash
 # start.sh — Lance le backend FastAPI
 
+# Load .env file if it exists
+if [ -f "$(dirname "$0")/.env" ]; then
+  export $(grep -v '^#' "$(dirname "$0")/.env" | xargs)
+fi
+
 echo "🔍 Vérification de la clé API..."
 if [ -z "$ANTHROPIC_API_KEY" ]; then
   echo "❌ ANTHROPIC_API_KEY non définie."
-  echo "   Exporte-la d'abord : export ANTHROPIC_API_KEY=sk-ant-..."
+  echo "   Crée un fichier .env avec : ANTHROPIC_API_KEY=sk-ant-..."
   exit 1
 fi
 
