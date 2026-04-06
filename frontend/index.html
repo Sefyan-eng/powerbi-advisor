@@ -1661,27 +1661,63 @@ nav .nav-tag {
               </button>
             </div>
 
-            <!-- Option 2: Push to Workspace -->
-            <div class="pbi-option">
-              <span class="opt-badge cloud">Cloud</span>
+            <!-- Option 2: Deploy to PBI Desktop via MCP -->
+            <div class="pbi-option" style="border-color: rgba(168,85,247,.3);">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <span class="opt-badge" style="background:rgba(168,85,247,.1);color:#a855f7;border:1px solid rgba(168,85,247,.2);">Direct</span>
+                <span class="opt-badge local">Free</span>
+              </div>
               <h4>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>
-                Push to Workspace
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                Deploy to PBI Desktop
               </h4>
               <div class="opt-desc">
-                Create a push dataset directly in your Power BI workspace via the REST API. Needs Azure AD app.
+                Connects directly to your running Power BI Desktop via Microsoft's MCP server. Creates relationships and DAX measures automatically — no file export needed.
               </div>
               <div class="opt-steps">
-                <div class="opt-step"><span class="step-num">1</span> Configure Azure AD credentials</div>
-                <div class="opt-step"><span class="step-num">2</span> Dataset created automatically</div>
+                <div class="opt-step"><span class="step-num">1</span> Open PBI Desktop, load your Excel</div>
+                <div class="opt-step"><span class="step-num">2</span> Click Deploy — done!</div>
               </div>
-              <button class="btn-pbi btn-workspace" onclick="openPushModal()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>
-                Push to Workspace
+              <div style="margin-top:14px;">
+                <label style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);display:block;margin-bottom:6px;">MCP Server Path</label>
+                <input type="text" id="mcpExePath" class="col-input" style="width:100%;padding:10px 12px;font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);" placeholder="C:\MCPServers\PowerBIModelingMCP\powerbi-modeling-mcp.exe" value="C:\MCPServers\PowerBIModelingMCP\powerbi-modeling-mcp.exe"/>
+                <div style="font-size:11px;color:var(--text3);margin-top:4px;"><a href="https://github.com/microsoft/powerbi-modeling-mcp" target="_blank" style="color:var(--primary-soft);">Download MCP server</a> — extract the VSIX, point to the .exe</div>
+              </div>
+              <button class="btn-pbi" style="background:rgba(168,85,247,.1);color:#a855f7;border:1px solid rgba(168,85,247,.25);margin-top:12px;" onclick="deployToDesktop()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                Deploy to Power BI Desktop
               </button>
+              <div id="deployResult" class="push-result" style="display:none;margin-top:12px;"></div>
             </div>
 
           </div>
+        </div>
+      </div>
+
+      <!-- AI Prompt Panel -->
+      <div class="section" id="promptSection">
+        <div class="section-header" style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-soft)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <h3 class="section-title" style="margin:0;">AI Model Assistant</h3>
+          <span style="font-size:11px;color:var(--text3);font-family:var(--mono);">Talk to your Power BI model</span>
+        </div>
+        <div id="chatMessages" style="max-height:400px;overflow-y:auto;padding:16px 0;display:flex;flex-direction:column;gap:12px;">
+          <div class="chat-hint" style="color:var(--text3);font-size:13px;padding:12px 16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);">
+            Type a command in natural language to modify your Power BI model directly. Examples:<br/>
+            <span style="color:var(--primary-soft);font-family:var(--mono);font-size:12px;">
+              "Add a YTD Sales measure"<br/>
+              "Create a date dimension table"<br/>
+              "Show me total sales by category"<br/>
+              "Add a profit margin % measure"
+            </span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <textarea id="promptInput" rows="2" placeholder="Ask Claude to modify your Power BI model..." style="flex:1;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:14px;resize:vertical;min-height:44px;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          <button id="promptSendBtn" onclick="sendPrompt()" style="padding:12px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;height:44px;transition:opacity .2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send
+          </button>
         </div>
       </div>
 
@@ -2209,12 +2245,197 @@ async function pushToWorkspace() {
   }
 }
 
+async function deployToDesktop() {
+  const mcpPath = document.getElementById('mcpExePath').value.trim();
+  if (!mcpPath) {
+    alert('Please enter the path to the Power BI Modeling MCP server executable.');
+    document.getElementById('mcpExePath').focus();
+    return;
+  }
+  const resultEl = document.getElementById('deployResult');
+  resultEl.className = 'push-result';
+  resultEl.style.display = 'none';
+  setStatus('Deploying to PBI Desktop...', true);
+
+  const payload = {
+    model: collectState(),
+    mcp_exe_path: mcpPath,
+  };
+
+  try {
+    const resp = await fetch(`${API}/deploy-to-desktop`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const result = await resp.json();
+    if (!resp.ok) throw new Error(result.detail || 'Deploy failed');
+
+    let msg = '';
+    if (result.relationships?.length > 0) {
+      msg += `<strong>${result.relationships.length} relationships</strong> created<br/>`;
+    }
+    if (result.tables_created?.length > 0) {
+      msg += `<strong>${result.tables_created.length} tables</strong> created from source data<br/>`;
+      result.tables_created.forEach(t => { msg += `<span style="font-size:12px;color:var(--text3);">&nbsp;&nbsp;${esc(t.name)} (${esc(t.type)}) — ${t.columns?.length || 0} columns</span><br/>`; });
+    }
+    if (result.measures?.length > 0) {
+      msg += `<strong>${result.measures.length} DAX measures</strong> created<br/>`;
+    }
+    if (result.pbi_tables?.length > 0) {
+      msg += `<br/><span style="font-size:11px;color:var(--text3);">Tables in PBI Desktop: ${result.pbi_tables.map(t => `<strong>${esc(t)}</strong>`).join(', ')}</span><br/>`;
+    }
+    if (result.verified_measures?.length > 0) {
+      msg += `<span style="font-size:11px;color:var(--success);">Verified: ${result.verified_measures.length} measures in model</span><br/>`;
+    }
+    if (result.verified_relationships?.length > 0) {
+      msg += `<span style="font-size:11px;color:var(--success);">Verified: ${result.verified_relationships.length} relationships in model</span><br/>`;
+    }
+    if (result.errors?.length > 0) {
+      msg += `<br/><strong>${result.errors.length} error(s):</strong><br/>`;
+      result.errors.forEach(e => { msg += `&bull; ${esc(e)}<br/>`; });
+    }
+    if (result.success) {
+      resultEl.className = 'push-result success';
+      resultEl.innerHTML = 'Deployed to Power BI Desktop!<br/>' + msg;
+    } else {
+      resultEl.className = 'push-result error';
+      resultEl.innerHTML = 'Deploy failed.<br/>' + msg;
+    }
+    resultEl.style.display = 'block';
+    setStatus(result.success ? 'Ready' : 'Error', false, !result.success);
+  } catch (e) {
+    resultEl.className = 'push-result error';
+    resultEl.innerHTML = esc(e.message);
+    resultEl.style.display = 'block';
+    setStatus('Error', false, true);
+  }
+}
+
 function showPushResult(type, msg) {
   const el = document.getElementById('pushResult');
   el.className = 'push-result ' + type;
   el.innerHTML = msg;
   el.style.display = 'block';
 }
+
+// ── AI Prompt / Chat ──
+let chatConversation = [];
+
+function addChatMessage(role, content) {
+  const container = document.getElementById('chatMessages');
+  // Remove hint on first message
+  const hint = container.querySelector('.chat-hint');
+  if (hint) hint.remove();
+
+  const bubble = document.createElement('div');
+  bubble.style.cssText = role === 'user'
+    ? 'align-self:flex-end;background:var(--primary);color:#fff;padding:10px 16px;border-radius:var(--radius) var(--radius) 4px var(--radius);max-width:80%;font-size:14px;line-height:1.5;'
+    : 'align-self:flex-start;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:12px 16px;border-radius:var(--radius) var(--radius) var(--radius) 4px;max-width:90%;font-size:14px;line-height:1.6;';
+  bubble.innerHTML = content;
+  container.appendChild(bubble);
+  container.scrollTop = container.scrollHeight;
+}
+
+function renderActions(actions) {
+  if (!actions || actions.length === 0) return '';
+  let html = '<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">';
+  for (const a of actions) {
+    const icon = a.status === 'done' ? '&#10003;' : '&#10007;';
+    const color = a.status === 'done' ? 'var(--success)' : 'var(--danger)';
+    let label = '';
+    if (a.type === 'create_measure') label = `Measure <strong>${esc(a.name)}</strong> on ${esc(a.table)}`;
+    else if (a.type === 'create_relationship') label = `Relationship ${esc(a.rel || '')}`;
+    else if (a.type === 'execute_dax') label = `DAX Query` + (a.result ? `<br/><code style="font-size:11px;color:var(--text3);white-space:pre-wrap;">${esc(a.result).substring(0,300)}</code>` : '');
+    else if (a.type === 'info') label = esc(a.message || '');
+    else label = `${esc(a.type)}: ${a.error ? esc(a.error) : 'done'}`;
+
+    html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px;">
+      <span style="color:${color};font-weight:700;font-size:14px;line-height:1;">${icon}</span>
+      <span style="font-size:13px;font-family:var(--mono);">${label}</span>
+    </div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+async function sendPrompt() {
+  const input = document.getElementById('promptInput');
+  const prompt = input.value.trim();
+  if (!prompt) return;
+
+  const mcpPath = document.getElementById('mcpExePath').value.trim();
+  if (!mcpPath) {
+    alert('Set the MCP Server Path in the export section first.');
+    return;
+  }
+
+  // Show user message
+  addChatMessage('user', esc(prompt));
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Show typing indicator
+  const typing = document.createElement('div');
+  typing.id = 'typingIndicator';
+  typing.style.cssText = 'align-self:flex-start;color:var(--text3);font-size:13px;padding:8px 16px;font-style:italic;';
+  typing.innerHTML = 'Claude is thinking & executing...';
+  document.getElementById('chatMessages').appendChild(typing);
+
+  const btn = document.getElementById('promptSendBtn');
+  btn.disabled = true;
+  setStatus('Processing prompt...', true);
+
+  try {
+    const resp = await fetch(`${API}/prompt-model`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        mcp_exe_path: mcpPath,
+        conversation: chatConversation,
+      }),
+    });
+    const result = await resp.json();
+    if (!resp.ok) throw new Error(result.detail || 'Request failed');
+
+    // Remove typing indicator
+    const ti = document.getElementById('typingIndicator');
+    if (ti) ti.remove();
+
+    // Build assistant reply
+    let reply = esc(result.reply || 'Done.');
+    reply += renderActions(result.actions);
+    if (result.errors && result.errors.length > 0) {
+      reply += `<div style="margin-top:8px;color:var(--danger);font-size:12px;font-family:var(--mono);">Errors: ${result.errors.map(e => esc(e)).join('<br/>')}</div>`;
+    }
+    addChatMessage('assistant', reply);
+
+    // Update conversation history for multi-turn
+    chatConversation.push({ role: 'user', content: prompt });
+    chatConversation.push({ role: 'assistant', content: result.reply || '' });
+
+    setStatus('Ready');
+  } catch (e) {
+    const ti = document.getElementById('typingIndicator');
+    if (ti) ti.remove();
+    addChatMessage('assistant', `<span style="color:var(--danger);">Error: ${esc(e.message)}</span>`);
+    setStatus('Error', false, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Enter to send (Shift+Enter for newline)
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('promptInput');
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendPrompt();
+      }
+    });
+  }
+});
 </script>
 </body>
 </html>

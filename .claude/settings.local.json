@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/microsoft/Analysis-Services/master/AsPartitionProcessing/AsPartitionProcessing.AdventureWorks/Model.bim\")",
+      "Bash(python:*)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(lsof -ti:8000)",
+      "Bash(xargs -r kill)",
+      "Bash(curl -s -X POST http://localhost:8000/generate-bim -H 'Content-Type: application/json' -d '{:*)",
+      "Bash(python3:*)",
+      "Bash(curl -s -X POST http://localhost:8000/generate-te-script -H \"Content-Type: application/json\" -d '{:*)"
+    ]
+  }
+}
